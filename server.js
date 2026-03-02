@@ -1,24 +1,25 @@
-const TelegramBot = require('node-telegram-bot-api');
+const express = require("express");
+const TelegramBot = require("node-telegram-bot-api");
 
-// 🔑 Apna token yaha paste karo
-const token = process.env.BOT_TOKEN;
+const app = express();
 
-const bot = new TelegramBot(token, { polling: true });
+// 👉 PORT (Render ke liye important)
+const PORT = process.env.PORT || 3000;
 
-bot.on('message', (msg) => {
-  const chatId = msg.chat.id;
-  const text = msg.text.toLowerCase();
+// 👉 Bot Token (Environment variable se aayega)
+const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-  if (text === "/start") {
-    bot.sendMessage(chatId, "🔥 Yamdhud Bot Live ho gaya!");
-  } 
-  else if (text.includes("hi")) {
-    bot.sendMessage(chatId, "Hello bhai 😎");
-  } 
-  else if (text.includes("help")) {
-    bot.sendMessage(chatId, "Kya help chahiye?");
-  } 
-  else {
-    bot.sendMessage(chatId, "Samajh nahi aaya 😅");
-  }
+// 👉 Simple route (Render ko batane ke liye server alive hai)
+app.get("/", (req, res) => {
+  res.send("Bot is running 🚀");
+});
+
+// 👉 Bot reply system
+bot.on("message", (msg) => {
+  bot.sendMessage(msg.chat.id, "Hello bhai 😎 Bot chal raha hai!");
+});
+
+// 👉 Server start
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

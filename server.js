@@ -16,7 +16,7 @@ app.get("/", (req, res) => {
 
 // 👉 Bot reply system
 bot.on("message", (msg) => {
-  bot.sendMessage(msg.chat.id, "Hello bhai 😎 Bot chal raha hai!");
+  bot.sendMessage(msg.chat.id, "TO SAV KO ASSALAMMUALIKUM I M ISTART🥵🚀✈️");
 });
 
 // 👉 Server start

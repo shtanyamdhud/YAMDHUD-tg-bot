@@ -23,3 +23,17 @@ bot.on("message", (msg) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+bot.on("message", (msg) => {
+    const text = msg.text.toLowerCase();
+
+    if (text === "hi" || text === "hello") {
+        bot.sendMessage(msg.chat.id, "👋 Hello bhai!");
+    } 
+    else if (text.includes("kaise ho")) {
+        bot.sendMessage(msg.chat.id, "😎 Mast hu bhai!");
+    }
+    else if (!text.startsWith("/")) {
+        bot.sendMessage(msg.chat.id, "🤖 Samajh nahi aaya!");
+    }
+});

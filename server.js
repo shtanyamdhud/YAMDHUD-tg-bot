@@ -1,113 +1,117 @@
 const TelegramBot = require('node-telegram-bot-api');
-const OpenAI = require('openai');
+const OpenAI = require("openai");
 
+// 🔑 ENV VARIABLES
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 });
 
-// 👑 ADMIN ID
-const ADMIN_ID = 123456789; // apni telegram UID dal
+// 👑 ADMIN ID (apni telegram uid daal)
+const ADMIN_ID = 123456789;
 
 // 🤖 AI CHAT FUNCTION
 async function getAIReply(text) {
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: text }],
-  });
+  try {
+    const res = await openai.responses.create({
+      model: "gpt-5-nano",
+      input: text
+    });
 
-  return res.choices[0].message.content;
+    return res.output[0].content[0].text;
+  } catch (err) {
+    return "⚠️ AI error aa gaya";
+  }
 }
 
-// =============================
-// 🧠 AUTO AI REPLY
-// =============================
+// 🧠 NORMAL MESSAGE REPLY (AI AUTO)
 bot.on("message", async (msg) => {
-  if (!msg.text) return;
-
   if (msg.text.startsWith("/")) return;
 
-  try {
-    const reply = await getAIReply(msg.text);
-    bot.sendMessage(msg.chat.id, reply);
-  } catch (e) {
-    bot.sendMessage(msg.chat.id, "⚠️ Error AI reply");
-  }
+  const reply = await getAIReply(msg.text);
+  bot.sendMessage(msg.chat.id, reply);
 });
 
-// =============================
-// 🎨 IMAGE GENERATOR
-// =============================
+// 📜 SCRIPT GENERATOR
+bot.onText(/\/script (.+)/, async (msg, match) => {
+  const topic = match[1];
+
+  const prompt = `Write a viral YouTube/Instagram script in Hindi on topic: ${topic}`;
+
+  const reply = await getAIReply(prompt);
+
+  bot.sendMessage(msg.chat.id, "🎬 Script:\n\n" + reply);
+});
+
+// 🖼️ IMAGE GENERATOR
 bot.onText(/\/image (.+)/, async (msg, match) => {
   const prompt = match[1];
 
   try {
-    const response = await openai.images.generate({
+    const result = await openai.images.generate({
       model: "gpt-image-1",
       prompt: prompt,
-      size: "1024x1024",
+      size: "1024x1024"
     });
 
-    const imageUrl = response.data[0].url;
+    const imageUrl = result.data[0].url;
 
     bot.sendPhoto(msg.chat.id, imageUrl, {
-      caption: "🎨 Image Generated",
+      caption: "🎨 Image Generated"
     });
+
   } catch (err) {
     bot.sendMessage(msg.chat.id, "⚠️ Image generate nahi hua");
   }
 });
 
-// =============================
-// 🎤 VOICE GENERATOR
-// =============================
-bot.onText(/\/voice (.+)/, async (msg, match) => {
+// 👑 ADMIN PANEL
+bot.onText(/\/admin/, (msg) => {
+  if (msg.from.id !== ADMIN_ID) {
+    return bot.sendMessage(msg.chat.id, "❌ Tu admin nahi hai");
+  }
+
+  bot.sendMessage(msg.chat.id,
+    "👑 Admin Panel\n\n" +
+    "/broadcast - sabko msg bhej\n" +
+    "/stats - user count"
+  );
+});
+
+// 📢 BROADCAST
+let users = new Set();
+
+bot.on("message", (msg) => {
+  users.add(msg.chat.id);
+});
+
+bot.onText(/\/broadcast (.+)/, (msg, match) => {
+  if (msg.from.id !== ADMIN_ID) return;
+
   const text = match[1];
 
-  try {
-    const speech = await openai.audio.speech.create({
-      model: "gpt-4o-mini-tts",
-      voice: "alloy",
-      input: text,
-    });
+  users.forEach(id => {
+    bot.sendMessage(id, text);
+  });
 
-    const buffer = Buffer.from(await speech.arrayBuffer());
-    bot.sendVoice(msg.chat.id, buffer);
-  } catch {
-    bot.sendMessage(msg.chat.id, "❌ Voice error");
-  }
+  bot.sendMessage(msg.chat.id, "✅ Broadcast done");
 });
 
-// =============================
-// 📜 SCRIPT GENERATOR
-// =============================
-bot.onText(/\/script (.+)/, async (msg, match) => {
-  const topic = match[1];
+// 📊 STATS
+bot.onText(/\/stats/, (msg) => {
+  if (msg.from.id !== ADMIN_ID) return;
 
-  const reply = await getAIReply(
-    `Ek mast viral script likh do topic: ${topic}`
-  );
-
-  bot.sendMessage(msg.chat.id, reply);
+  bot.sendMessage(msg.chat.id, `👥 Total Users: ${users.size}`);
 });
 
-// =============================
-// 👑 ADMIN PANEL
-// =============================
-bot.onText(/\/admin/, (msg) => {
-  if (msg.from.id !== ADMIN_ID)
-    return bot.sendMessage(msg.chat.id, "❌ Not admin");
-
-  bot.sendMessage(msg.chat.id, "👑 Admin Panel Active");
-});
-
-// =============================
-// 🚀 START
-// =============================
+// 🚀 START MESSAGE
 bot.onText(/\/start/, (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    "🤖 Bot Online!\n\nCommands:\n/image\n/voice\n/script"
+  bot.sendMessage(msg.chat.id,
+    "🤖 Welcome AI Bot\n\n" +
+    "Commands:\n" +
+    "/script topic\n" +
+    "/image prompt\n\n" +
+    "Ya seedha message bhej AI reply karega 💬"
   );
 });

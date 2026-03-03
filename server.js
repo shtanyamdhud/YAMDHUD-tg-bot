@@ -1,5 +1,8 @@
 const TelegramBot = require('node-telegram-bot-api');
 const OpenAI = require("openai");
+const express = require("express");
+
+const app = express();
 
 // 🔑 ENV VARIABLES
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
@@ -8,8 +11,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// 👑 ADMIN ID (apni telegram uid daal)
-const ADMIN_ID = 123456789;
+// 👑 ADMIN ID
+const ADMIN_ID = process.env.ADMIN_ID || 123456789;
+
+// 🌐 PORT FIX (IMPORTANT FOR RENDER)
+const PORT = process.env.PORT || 3000;
 
 // 🤖 AI CHAT FUNCTION
 async function getAIReply(text) {
@@ -27,7 +33,7 @@ async function getAIReply(text) {
 
 // 🧠 NORMAL MESSAGE REPLY (AI AUTO)
 bot.on("message", async (msg) => {
-  if (msg.text.startsWith("/")) return;
+  if (msg.text && msg.text.startsWith("/")) return;
 
   const reply = await getAIReply(msg.text);
   bot.sendMessage(msg.chat.id, reply);
@@ -36,11 +42,9 @@ bot.on("message", async (msg) => {
 // 📜 SCRIPT GENERATOR
 bot.onText(/\/script (.+)/, async (msg, match) => {
   const topic = match[1];
-
   const prompt = `Write a viral YouTube/Instagram script in Hindi on topic: ${topic}`;
 
   const reply = await getAIReply(prompt);
-
   bot.sendMessage(msg.chat.id, "🎬 Script:\n\n" + reply);
 });
 
@@ -68,26 +72,27 @@ bot.onText(/\/image (.+)/, async (msg, match) => {
 
 // 👑 ADMIN PANEL
 bot.onText(/\/admin/, (msg) => {
-  if (msg.from.id !== ADMIN_ID) {
+  if (msg.from.id != ADMIN_ID) {
     return bot.sendMessage(msg.chat.id, "❌ Tu admin nahi hai");
   }
 
   bot.sendMessage(msg.chat.id,
     "👑 Admin Panel\n\n" +
-    "/broadcast - sabko msg bhej\n" +
-    "/stats - user count"
+    "/broadcast msg\n" +
+    "/stats"
   );
 });
 
-// 📢 BROADCAST
+// 📢 USERS STORE
 let users = new Set();
 
 bot.on("message", (msg) => {
   users.add(msg.chat.id);
 });
 
+// 📢 BROADCAST
 bot.onText(/\/broadcast (.+)/, (msg, match) => {
-  if (msg.from.id !== ADMIN_ID) return;
+  if (msg.from.id != ADMIN_ID) return;
 
   const text = match[1];
 
@@ -100,18 +105,27 @@ bot.onText(/\/broadcast (.+)/, (msg, match) => {
 
 // 📊 STATS
 bot.onText(/\/stats/, (msg) => {
-  if (msg.from.id !== ADMIN_ID) return;
+  if (msg.from.id != ADMIN_ID) return;
 
   bot.sendMessage(msg.chat.id, `👥 Total Users: ${users.size}`);
 });
 
-// 🚀 START MESSAGE
+// 🚀 START
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id,
     "🤖 Welcome AI Bot\n\n" +
-    "Commands:\n" +
     "/script topic\n" +
     "/image prompt\n\n" +
-    "Ya seedha message bhej AI reply karega 💬"
+    "Direct msg bhejo AI reply karega 💬"
   );
+});
+
+
+// 🌐 EXPRESS SERVER (RENDER FIX)
+app.get("/", (req, res) => {
+  res.send("Bot is running 🚀");
+});
+
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
 });
